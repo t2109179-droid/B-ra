@@ -104,7 +104,9 @@
         <div id="status-dot"></div>
         <span id="status-text">Kamera izni bekleniyor...</span>
     </div>
-    <video id="webcam" style="display:none;" playsinline></video>
+    
+    <!-- Mobil tarayıcılar için düzeltilmiş video elementi -->
+    <video id="webcam" autoplay muted playsinline style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></video>
     <canvas id="canvas"></canvas>
 
     <script>
@@ -307,7 +309,6 @@
                         vy *= 0.93;
 
                         let hit = false;
-                        // Geliştirilmiş Çarpma ve Sınır Tepkisi
                         if (x < margin) { x = margin; vx = -vx * 0.8; hit = true; }
                         if (x > innerWidth - margin) { x = innerWidth - margin; vx = -vx * 0.8; hit = true; }
                         if (y < margin) { y = margin; vy = -vy * 0.8; hit = true; }
