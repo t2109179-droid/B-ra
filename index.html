@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -89,8 +90,7 @@
             transform: scale(0.95);
         }
     </style>
-    <!-- MediaPipe Kütüphaneleri -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <!-- MediaPipe Hands Kütüphanesi (Camera utils kaldırıldı) -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -105,7 +105,7 @@
         <span id="status-text">Kamera izni bekleniyor...</span>
     </div>
     
-    <!-- Mobil tarayıcılar için düzeltilmiş video elementi -->
+    <!-- Mobil uyumlu video elementi -->
     <video id="webcam" autoplay muted playsinline style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></video>
     <canvas id="canvas"></canvas>
 
@@ -383,7 +383,9 @@
             });
         }
 
-        function initSystem() {
+        async function initSystem() {
+            const videoElement = document.getElementById('webcam');
+
             const hands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
@@ -445,21 +447,29 @@
                 }
             });
 
-            const videoElement = document.getElementById('webcam');
-            const camera = new Camera(videoElement, {
-                onFrame: async () => {
-                    await hands.send({ image: videoElement });
-                },
-                width: 640,
-                height: 480
-            });
-
-            camera.start().then(() => {
+            try {
+                // Doğrudan tarayıcı API'si ile kamera akışını başlatıyoruz (iOS Safari uyumlu)
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                videoElement.srcObject = stream;
+                await videoElement.play();
+                
                 setStatus("Kamera Hazır, El Bekleniyor", "#cccccc");
-            }).catch(err => {
-                setStatus("Kamera Erişimi Reddedildi", "#ff3b30");
-                console.error(err);
-            });
+
+                // Her karede MediaPipe'a görüntü gönderen ana döngü
+                async function sendVideoFrame() {
+                    if (videoElement.readyState >= 2) {
+                        await hands.send({ image: videoElement });
+                    }
+                    requestAnimationFrame(sendVideoFrame);
+                }
+                sendVideoFrame();
+
+            } catch (err) {
+                setStatus("Kamera Erişimi Reddedildi veya Açılamadı", "#ff3b30");
+                console.error("Kamera başlatma hatası:", err);
+            }
         }
 
         requestAnimationFrame(function anim(t) {
