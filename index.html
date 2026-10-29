@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -18,7 +19,6 @@
             width: 100vw;
             height: 100vh;
         }
-        /* iOS Tarzı Sade Durum Paneli */
         #status-panel {
             position: absolute;
             top: 16px;
@@ -48,8 +48,6 @@
             border-radius: 50%;
             background-color: #cccccc;
         }
-
-        /* İntro Ekranı Stilleri */
         #intro-screen {
             position: fixed;
             top: 0;
@@ -90,11 +88,10 @@
             transform: scale(0.95);
         }
     </style>
-    <!-- MediaPipe Hands Kütüphanesi (Camera utils kaldırıldı) -->
+    <!-- MediaPipe Hands Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <!-- İntro Ekranı -->
     <div id="intro-screen">
         <h1>Merhaba Büşra</h1>
         <button id="start-btn" onclick="startApp()">Başlamak İçin Dokun</button>
@@ -105,7 +102,6 @@
         <span id="status-text">Kamera izni bekleniyor...</span>
     </div>
     
-    <!-- Mobil uyumlu video elementi -->
     <video id="webcam" autoplay muted playsinline style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></video>
     <canvas id="canvas"></canvas>
 
@@ -133,36 +129,25 @@
 
         function playTone(freq, duration, type = 'sine') {
             if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             try {
                 const now = audioCtx.currentTime;
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, now);
-                
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-                
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
                 osc.start(now);
                 osc.stop(now + duration);
-            } catch(e) {
-                console.error("Ses hatası:", e);
-            }
+            } catch(e) {}
         }
 
         function playSound(type) {
             if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const now = audioCtx.currentTime;
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -175,24 +160,21 @@
                 osc.frequency.exponentialRampToValueAtTime(700, now + 0.15);
                 gainNode.gain.setValueAtTime(0.25, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
             } else if (type === 'throw') {
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(600, now);
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
                 gainNode.gain.setValueAtTime(0.3, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
             } else if (type === 'hit') {
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(220, now);
                 osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
                 gainNode.gain.setValueAtTime(0.45, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                osc.start(now);
-                osc.stop(now + 0.12);
+                osc.start(now); osc.stop(now + 0.12);
             }
         }
 
@@ -221,39 +203,22 @@
         }
 
         function spawn() {
-            const pts = many(333, () => ({
-                x: rnd(innerWidth),
-                y: rnd(innerHeight),
-                len: 0,
-                r: 0
-            }));
-
-            const pts2 = many(9, (i) => ({
-                x: cos((i / 9) * PI * 2),
-                y: sin((i / 9) * PI * 2)
-            }));
+            const pts = many(333, () => ({ x: rnd(innerWidth), y: rnd(innerHeight), len: 0, r: 0 }));
+            const pts2 = many(9, (i) => ({ x: cos((i / 9) * PI * 2), y: sin((i / 9) * PI * 2) }));
 
             let seed = rnd(100);
             let tx = innerWidth / 2;
             let ty = innerHeight / 2;
-            let x = tx;
-            let y = ty;
-            let kx = rnd(0.5, 0.5);
-            let ky = rnd(0.5, 0.5);
+            let x = tx, y = ty;
+            let kx = rnd(0.5, 0.5), ky = rnd(0.5, 0.5);
             let walkRadius = pt(rnd(50, 50), rnd(50, 50));
             let r = innerWidth / rnd(100, 150);
 
             function paintPt(pt) {
                 pts2.forEach((pt2) => {
                     if (!pt.len) return;
-                    
-                    let offsetX = 0;
-                    let offsetY = 0;
-                    if (hitEffectTimer > 0) {
-                        offsetX = (Math.random() - 0.5) * 16;
-                        offsetY = (Math.random() - 0.5) * 16;
-                    }
-
+                    let offsetX = hitEffectTimer > 0 ? (Math.random() - 0.5) * 16 : 0;
+                    let offsetY = hitEffectTimer > 0 ? (Math.random() - 0.5) * 16 : 0;
                     drawLine(
                         lerp(x + pt2.x * r, pt.x, pt.len * pt.len) + offsetX,
                         lerp(y + pt2.y * r, pt.y, pt.len * pt.len) + offsetY,
@@ -266,20 +231,14 @@
 
             return {
                 follow(nx, ny, holding, velocityX = 0, velocityY = 0, launch = false) {
-                    if (holding && !isHolding) {
-                        playSound('catch');
-                    }
-
+                    if (holding && !isHolding) playSound('catch');
                     if (holding) {
                         isHolding = true;
                         tx = Math.max(50, Math.min(innerWidth - 50, nx));
                         ty = Math.max(50, Math.min(innerHeight - 50, ny));
-                        vx = 0;
-                        vy = 0;
+                        vx = 0; vy = 0;
                     } else if (launch) {
-                        if (isHolding) {
-                            playSound('throw');
-                        }
+                        if (isHolding) playSound('throw');
                         isHolding = false;
                         vx = velocityX * 2.0;
                         vy = velocityY * 2.0;
@@ -291,7 +250,6 @@
                 tick(t) {
                     const selfMoveX = cos(t * kx + seed) * walkRadius.x;
                     const selfMoveY = sin(t * ky + seed) * walkRadius.y;
-                    
                     let fx, fy;
                     const margin = 45;
 
@@ -300,25 +258,19 @@
                         fy = Math.max(margin, Math.min(innerHeight - margin, ty));
                         x += min(innerWidth / 100, (fx - x) / 2);
                         y += min(innerWidth / 100, (fy - y) / 2);
-                        vx = 0;
-                        vy = 0;
+                        vx = 0; vy = 0;
                     } else if (vx !== 0 || vy !== 0) {
-                        x += vx;
-                        y += vy;
-                        vx *= 0.93;
-                        vy *= 0.93;
-
+                        x += vx; y += vy;
+                        vx *= 0.93; vy *= 0.93;
                         let hit = false;
                         if (x < margin) { x = margin; vx = -vx * 0.8; hit = true; }
                         if (x > innerWidth - margin) { x = innerWidth - margin; vx = -vx * 0.8; hit = true; }
                         if (y < margin) { y = margin; vy = -vy * 0.8; hit = true; }
                         if (y > innerHeight - margin) { y = innerHeight - margin; vy = -vy * 0.8; hit = true; }
-
                         if (hit && (Math.abs(vx) > 1 || Math.abs(vy) > 1)) {
                             playSound('hit');
                             hitEffectTimer = 12;
                         }
-
                         if (hypot(vx, vy) < 0.6) { vx = 0; vy = 0; }
                     } else {
                         fx = Math.max(margin, Math.min(innerWidth - margin, tx + selfMoveX));
@@ -328,18 +280,14 @@
                     }
 
                     if (hitEffectTimer > 0) hitEffectTimer--;
-
-                    spiderCurrentX = x;
-                    spiderCurrentY = y;
+                    spiderCurrentX = x; spiderCurrentY = y;
 
                     let i = 0;
                     pts.forEach((pt) => {
-                        const dx = pt.x - x,
-                              dy = pt.y - y;
+                        const dx = pt.x - x, dy = pt.y - y;
                         const len = hypot(dx, dy);
                         let baseR = isHolding ? 3.5 : 2; 
                         let r = min(baseR, innerWidth / len / 5);
-                        pt.t = 0;
                         const increasing = len < innerWidth / 10 && (i++) < 8;
                         let dir = increasing ? 0.1 : -0.1;
                         if (increasing) r *= 1.5;
@@ -386,15 +334,28 @@
         async function initSystem() {
             const videoElement = document.getElementById('webcam');
 
+            try {
+                setStatus("Kamera Başlatılıyor...", "#34c759");
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                videoElement.srcObject = stream;
+                await videoElement.play();
+            } catch (err) {
+                setStatus("Kamera İzni Reddedildi", "#ff3b30");
+                console.error("Kamera hatası:", err);
+                return;
+            }
+
             const hands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
 
             hands.setOptions({
                 maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.65,
-                minTrackingConfidence: 0.65
+                modelComplexity: 0,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
             });
 
             hands.onResults((results) => {
@@ -409,22 +370,20 @@
                     const pinchY = ((thumbTip.y + indexTip.y) / 2) * innerHeight;
 
                     const pinchDist = hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-                    const isPinched = pinchDist < 0.055;
+                    const isPinched = pinchDist < 0.065;
 
                     const distToSpider = hypot(pinchX - spiderCurrentX, pinchY - spiderCurrentY);
-
                     let wasHolding = isHolding;
 
-                    if (isPinched && (distToSpider < 120 || isHolding)) {
+                    if (isPinched && (distToSpider < 140 || isHolding)) {
                         isHolding = true;
-                        setStatus("Örümcek Tutuldu! Savurun veya Kameradan Çekin", "#34c759");
+                        setStatus("Örümcek Tutuldu! Savurun", "#34c759");
                     } else {
                         isHolding = false;
                     }
 
                     let throwVx = pinchX - lastPinchX;
                     let throwVy = pinchY - lastPinchY;
-
                     lastPinchX = pinchX;
                     lastPinchY = pinchY;
 
@@ -434,42 +393,29 @@
                     } else {
                         spider.follow(pinchX, pinchY, isHolding, 0, 0, false);
                     }
-
                 } else {
                     if (handWasPresent && isHolding) {
-                        setStatus("Örümcek Fırlatıldı! (El Çıktı)", "#ff9500");
-                        spider.follow(spiderCurrentX, spiderCurrentY, false, lastPinchX ? (lastPinchX - spiderCurrentX)/4 : 12, lastPinchY ? (lastPinchY - spiderCurrentY)/4 : -12, true);
+                        setStatus("Örümcek Fırlatıldı!", "#ff9500");
+                        spider.follow(spiderCurrentX, spiderCurrentY, false, 12, -12, true);
                     }
                     handWasPresent = false;
                     latestLandmarks = null;
                     isHolding = false;
-                    setStatus("Kamera Aktif - El Bekleniyor", "#cccccc");
+                    setStatus("El Bekleniyor (Elini Göster)", "#cccccc");
                 }
             });
 
-            try {
-                // Doğrudan tarayıcı API'si ile kamera akışını başlatıyoruz (iOS Safari uyumlu)
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                videoElement.srcObject = stream;
-                await videoElement.play();
-                
-                setStatus("Kamera Hazır, El Bekleniyor", "#cccccc");
+            setStatus("El Bekleniyor (Elini Göster)", "#cccccc");
 
-                // Her karede MediaPipe'a görüntü gönderen ana döngü
-                async function sendVideoFrame() {
-                    if (videoElement.readyState >= 2) {
+            async function processVideo() {
+                if (videoElement.readyState >= 2) {
+                    try {
                         await hands.send({ image: videoElement });
-                    }
-                    requestAnimationFrame(sendVideoFrame);
+                    } catch (e) {}
                 }
-                sendVideoFrame();
-
-            } catch (err) {
-                setStatus("Kamera Erişimi Reddedildi veya Açılamadı", "#ff3b30");
-                console.error("Kamera başlatma hatası:", err);
+                requestAnimationFrame(processVideo);
             }
+            processVideo();
         }
 
         requestAnimationFrame(function anim(t) {
@@ -492,46 +438,27 @@
             requestAnimationFrame(anim);
         });
 
-        function rnd(x = 1, dx = 0) {
-            return Math.random() * x + dx;
-        }
-
-        function drawCircle(x, y, r) {
-            ctx.beginPath();
-            ctx.ellipse(x, y, r, r, 0, 0, PI * 2);
-            ctx.fill();
-        }
-
+        function rnd(x = 1, dx = 0) { return Math.random() * x + dx; }
+        function drawCircle(x, y, r) { ctx.beginPath(); ctx.ellipse(x, y, r, r, 0, 0, PI * 2); ctx.fill(); }
         function drawLine(x0, y0, x1, y1) {
             ctx.beginPath();
             ctx.moveTo(x0, y0);
             many(100, (i) => {
                 i = (i + 1) / 100;
-                let x = lerp(x0, x1, i);
-                let y = lerp(y0, y1, i);
+                let x = lerp(x0, x1, i), y = lerp(y0, y1, i);
                 let k = noise(x / 5 + x0, y / 5 + y0) * 2;
                 ctx.lineTo(x + k, y + k);
             });
             ctx.stroke();
         }
-
-        function many(n, f) {
-            return [...Array(n)].map((_, i) => f(i));
-        }
-
-        function lerp(a, b, t) {
-            return a + (b - a) * t;
-        }
-
+        function many(n, f) { return [...Array(n)].map((_, i) => f(i)); }
+        function lerp(a, b, t) { return a + (b - a) * t; }
         function noise(x, y, t = 101) {
             let w0 = sin(0.3 * x + 1.4 * t + 2.0 + 2.5 * sin(0.4 * y + -1.3 * t + 1.0));
             let w1 = sin(0.2 * y + 1.5 * t + 2.8 + 2.3 * sin(0.5 * x + -1.2 * t + 0.5));
             return w0 + w1;
         }
-
-        function pt(x, y) {
-            return { x, y };
-        }
+        function pt(x, y) { return { x, y }; }
     </script>
 </body>
 </html>
